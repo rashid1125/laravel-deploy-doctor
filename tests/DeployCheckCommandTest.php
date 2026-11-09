@@ -9,21 +9,22 @@ class DeployCheckCommandTest extends TestCase
         config(['app.key' => null]);
 
         $this->artisan('deploy:check')
-            ->expectsOutput('[FAIL] APP_KEY is configured')
+            ->expectsOutputToContain('Application key')
+            ->expectsOutputToContain('APP_KEY is missing.')
             ->assertExitCode(1);
     }
 
     public function test_it_passes_when_app_key_is_configured_outside_production(): void
     {
         config([
-            'app.key' => 'base64:test-key',
+            'app.key' => 'base64:test-secret-that-must-not-be-printed',
             'app.env' => 'testing',
             'app.debug' => true,
+            'app.url' => 'http://localhost',
         ]);
 
         $this->artisan('deploy:check')
-            ->expectsOutput('[PASS] APP_KEY is configured')
-            ->expectsOutput('[PASS] APP_DEBUG is disabled in production')
+            ->expectsOutputToContain('APP_KEY is configured (value hidden).')
             ->assertExitCode(0);
     }
 
@@ -33,10 +34,38 @@ class DeployCheckCommandTest extends TestCase
             'app.key' => 'base64:test-key',
             'app.env' => 'production',
             'app.debug' => true,
+            'app.url' => 'https://example.test',
         ]);
 
         $this->artisan('deploy:check')
-            ->expectsOutput('[FAIL] APP_DEBUG is disabled in production')
+            ->expectsOutputToContain('Debug mode is enabled in production.')
             ->assertExitCode(1);
+    }
+
+    public function test_strict_mode_treats_warnings_as_failures(): void
+    {
+        config([
+            'app.key' => 'base64:test-key',
+            'app.env' => 'production',
+            'app.debug' => false,
+            'app.url' => 'http://example.test',
+        ]);
+
+        $this->artisan('deploy:check', ['--strict' => true])
+            ->assertExitCode(1);
+    }
+
+    public function test_json_mode_outputs_a_structured_report(): void
+    {
+        config([
+            'app.key' => 'base64:do-not-leak-this-value',
+            'app.env' => 'testing',
+            'app.debug' => false,
+        ]);
+
+        $this->artisan('deploy:check', ['--json' => true])
+            ->expectsOutputToContain('"checks"')
+            ->expectsOutputToContain('"Application key"')
+            ->assertExitCode(0);
     }
 }

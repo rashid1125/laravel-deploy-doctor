@@ -1,6 +1,6 @@
 # Laravel Deploy Doctor
 
-A small Artisan command that checks common Laravel deployment requirements.
+A small Artisan command that checks common Laravel deployment requirements and prints actionable advice.
 
 ## Requirements
 
@@ -21,7 +21,21 @@ Laravel package discovery registers the service provider automatically.
 php artisan deploy:check
 ```
 
-The command checks that `APP_KEY` is configured, production debug mode is off, Laravel's `storage` and `bootstrap/cache` directories are writable, and the `public/storage` symlink exists. A missing symlink is reported as a warning. Failed checks return a non-zero exit code.
+Checks include the application key (its value is never printed), production debug mode, HTTPS `APP_URL` in production, writable `storage` and `bootstrap/cache` directories, the public storage symlink, configuration caching, and accidental `public/.env` exposure.
+
+Warnings do not fail the command by default. Use strict mode in CI/deployment pipelines to make warnings fail:
+
+```bash
+php artisan deploy:check --strict
+```
+
+For automation, emit JSON instead of a table:
+
+```bash
+php artisan deploy:check --json
+```
+
+The command returns exit code `1` when a check fails, or when strict mode encounters a warning; otherwise it returns `0`.
 
 ## Run package tests
 
