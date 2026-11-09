@@ -1,0 +1,8 @@
+<?php
+
+return [
+    'bootstrap' => __DIR__.'/../vendor/autoload.php',
+    'cacheDirectory' => sys_get_temp_dir(),
+    'colors' => true,
+    'testdox' => true,
+];
